@@ -30,7 +30,7 @@ local function spawn()
 
       process.onexit(function(status, signal)
          print(col.red('process [' .. process.pid .. '] terminated with status/signal: ' .. col.blue(status) .. ', ' .. col.green(signal)))
-         print('re-running in ' .. opt.every .. 's')
+         print(col.magenta('re-running in ' .. opt.every .. 's'))
          async.setTimeout(opt.every * 1000, function()
             spawn()
          end)
