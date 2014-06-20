@@ -1,0 +1,42 @@
+#!/usr/bin/env luajit
+
+local async = require 'async'
+require 'trepl'
+require 'pl'
+require 'sys'
+
+local opt = lapp[[
+Schedule a script to run based on conditions (fixed intervals, ...)
+   --every  (default 1)   schedule job every N seconds
+   <run>    (string)      script to run
+]]
+
+local col = async.repl.colorize
+
+local _,_,run,args = opt.run:find('(%w*)%s*(.*)')
+local args = stringx.split(args,' ')
+
+local function spawn()
+   async.process.spawn(run, args, function(process)
+      print(col.green('scheduled process [' .. process.pid .. '] : ' .. run .. ''), args)
+
+      process.stdout.ondata(function(data)
+         io.write(data) io.flush()
+      end)
+
+      process.stderr.ondata(function(data)
+         io.write(col.red(data)) io.flush()
+      end)
+
+      process.onexit(function(status, signal)
+         print(col.red('process [' .. process.pid .. '] terminated with status/signal: ' .. col.blue(status) .. ', ' .. col.green(signal)))
+         print('re-running in ' .. opt.every .. 's')
+         async.setTimeout(opt.every * 1000, function()
+            spawn()
+         end)
+      end)
+   end)
+end
+
+spawn()
+async.go()
